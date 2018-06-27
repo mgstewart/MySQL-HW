@@ -1,5 +1,6 @@
 -- First declare the sakila database as the database for subsequent actions to be taken
 use sakila;
+SET SQL_SAFE_UPDATES = 0;
 -- Using select, select only the first and last names from the actor table (1a)
 select actor.first_name,actor.last_name from actor;
 -- Now the first and last names will be merged and put into a new column in the table Actor Name (1b)
@@ -46,6 +47,44 @@ update actor
 	where first_name = 'GROUCHO' and last_name = 'WILLIAMS';
 -- We will now create a command that will change HARPO if found to GROUCHO
 -- and if we find GROUCHO we will change it to MUCHO GROUCHO
+-- Using the where actor_id clause will constrain the update to only the relevant actor (4d)
+update actor
+	set actor.first_name = 
+	CASE 
+		WHEN first_name = 'HARPO' and last_name = 'WILLIAMS' THEN 'GROUCHO' 
+		Else 'MUCHO GROUCHO' END
+	where actor_id = 172;
+-- We will now investigate the schema of the address table using show create table (5a)
+show create table address;
 
-
-
+-- We will now use JOIN to display the first and last names and address of staff members
+-- by using an inner join on the tables staff and address (6a)
+select address.address, address.address_id, staff.first_name, staff.last_name from staff 
+	Inner Join address on staff.address_id = address.address_id;
+-- We will now use another join and aggregate function sum() to tally up how much each staff member checked out (6b)
+select payment.staff_id, sum(payment.amount) as 'Total Rental Sales ($)',staff.staff_id, staff.first_name, staff.last_name from staff 
+	Inner Join payment on staff.staff_id = payment.staff_id group by staff.staff_id;
+-- We will now use joins to print out a count of actors in each film in film and film_actor(6c)
+select film.film_id, count(film_actor.actor_id) as 'Count of Actors in Movie',film.title as 'Movie Title' from film 
+	Inner Join film_actor on film.film_id = film_actor.film_id group by film_id;
+-- We will again use the inner join and count functions to determine the number of copies of Hunchback Impossible (6d)
+select  title, count(title) as 'Number of Copies of Film'  from (
+	select film.film_id as fid, film.title, inventory.inventory_id, inventory.film_id as iid from inventory
+	Inner Join film on inventory.film_id = film.film_id) 
+    as table1 where title = 'Hunchback Impossible' group by title;
+-- We will now use the payment and customer tables and join to determine the amount paid per customer
+-- the results will also be sorted alphabetically by customer's last name (6e)
+select customer.first_name, customer.last_name, sum(payment.amount) as 'Total Amount Paid ($)' from customer
+	Inner Join payment on customer.customer_id = payment.customer_id group by customer.customer_id order by customer.last_name;
+    
+-- We will now use subqueries to query both films that start with the letter K and Q and the language is english (7a)
+select * from 
+	(select title,language_id from film where title LIKE "K%" or title LIKE "Q%") 
+as t1 where language_id = 1;
+-- We will now use subqueries to list all actors in the film "Alone Trip" (7b)
+select first_name,last_name from actor where actor_id in (
+	select actor_id from film_actor where film_id = (
+		select film_id from film where title = 'Alone Trip'));
+-- We will now use joins to determine all canadian (country_id = 20) customers of Sakila DVD (7c)
+#select customer.first_name as 'First Name', customer.last_name as 'Last Name', customer.email from (
+select * from rental inner join customer where rental.customer_id = customer.customer_id;
