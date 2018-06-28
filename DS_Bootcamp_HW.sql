@@ -86,5 +86,53 @@ select first_name,last_name from actor where actor_id in (
 	select actor_id from film_actor where film_id = (
 		select film_id from film where title = 'Alone Trip'));
 -- We will now use joins to determine all canadian (country_id = 20) customers of Sakila DVD (7c)
-#select customer.first_name as 'First Name', customer.last_name as 'Last Name', customer.email from (
-select * from rental inner join customer where rental.customer_id = customer.customer_id;
+select first_name, last_name, email
+	from rental
+		inner join customer on rental.customer_id = customer.customer_id
+		inner join address on address.address_id = customer.address_id
+		inner join city on city.city_id = address.city_id
+	where country_id = 20;
+-- We will now similarly use joins to determine all films that are family (category_id = 8) (7d)
+select title
+	from film
+		inner join film_category on film.film_id = film_category.film_id
+	where category_id = 8;
+-- We will now use joins to list the most frequently rented films in descending order (7e)
+select title, count(film.film_id) as 'Number of Rentals'
+	from rental
+		inner join inventory on rental.inventory_id = inventory.inventory_id
+        inner join film on film.film_id = inventory.film_id
+        group by film.film_id;
+-- We will now write a query to determine how much revenue the two branches of Sakila DVD has obtained (7f)
+select staff_id as 'Store ID', sum(amount) as 'Total Store Revenue ($)'
+	from payment
+	group by staff_id;
+-- We will now query each store for its ID, city, and country (7g)
+select store_id, city, country
+	from store
+		inner join address on store.address_id = address.address_id
+        inner join city on address.city_id = city.city_id
+        inner join country on city.country_id = country.country_id;
+-- We will now use joins to determine the top five genres in terms of gross revenue
+select `name`, sum(amount) as 'Total Rental Revenues ($)'
+	from category
+		inner join film_category on category.category_id = film_category.category_id
+        inner join inventory on inventory.film_id = film_category.film_id
+        inner join rental on rental.inventory_id = inventory.inventory_id
+        inner join payment on payment.rental_id = rental.rental_id
+        group by `name`
+        order by sum(amount) desc;
+-- We will now create a view of the above query (8a)
+create view top_five_categories as
+select `name`, sum(amount) as 'Total Rental Revenues ($)'
+	from category
+		inner join film_category on category.category_id = film_category.category_id
+        inner join inventory on inventory.film_id = film_category.film_id
+        inner join rental on rental.inventory_id = inventory.inventory_id
+        inner join payment on payment.rental_id = rental.rental_id
+        group by `name`
+		order by sum(amount) desc;
+-- We will now use SQL syntax to view the created view (8b)
+select * from top_five_categories;
+-- We will now use SQL syntax to drop the created view (8c)
+drop view top_five_categories;
